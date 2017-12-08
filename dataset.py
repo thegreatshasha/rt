@@ -32,25 +32,26 @@ class SquaresDataset:
         
         Returns:
             imgs (n, 3, 240, 240): RGB image tensor
-            labels: list of list of boxes for each image, each box in (tx, ty, bx, by) format
+            labels (n, v(n), 4): Numpy array with variable no of boxes per image
         """
         # image tensor
-        imgs = np.zeros((n,3,img_h,img_w))
+        imgs = np.zeros((n,3,240,240), dtype=np.float32)
         labels = []
 
         for img in imgs:
+            num_boxes = np.random.randint(2,4)
 
             boxes = []
-            for i in xrange(2):
-                tx = np.random.randint(0, img_w-w)
-                ty = np.random.randint(0, img_h-h)
-                box = [tx,ty,tx+w,ty+h]
+            for i in xrange(num_boxes):
+                tx = np.random.randint(0, 239-w)
+                ty = np.random.randint(0, 239-h)
+                box = np.array([tx,ty,tx+w,ty+h])
                 img[:,ty:ty+h,tx:tx+w] = 1
                 boxes.append(box)
             
-            labels.append(boxes)
+            labels.append(np.array(boxes))
         
-        return imgs, labels
+        return imgs, np.array(labels)
     
     def visualize_batch(self, imgs, labels):
         """ 

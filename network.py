@@ -86,4 +86,4 @@ class VGGNet(chainer.Chain):
         
     
         
-        return sig_reg, h_class
+        return h_class, sig_reg
