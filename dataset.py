@@ -39,7 +39,7 @@ class SquaresDataset:
         labels = []
 
         for img in imgs:
-            num_boxes = np.random.randint(2,4)
+            num_boxes = 2 # np.random.randint(2,4)
 
             boxes = []
             for i in xrange(num_boxes):

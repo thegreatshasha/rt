@@ -55,8 +55,9 @@ class VGGNet(chainer.Chain):
         h = F.relu(self.conv2_2(h))
         h = F.relu(self.conv3_1(h))
         h_pool1 = F.max_pooling_2d(h, 2, stride=2)
-#         print(h_pool1.shape)  
-        
+#         print(h_pool1.shape) 
+
+        #h = F.relu(self.conv3_1(h_pool1))
         h = F.relu(self.conv3_2(h_pool1))
         h = F.relu(self.conv3_3(h))
         h_concat = F.relu(self.conv3_4(h))
@@ -74,16 +75,14 @@ class VGGNet(chainer.Chain):
        
         
         h_reg =F.relu(self.reg_conv5_1(h)) 
-        
         h_reg =F.relu(self.reg_conv5_2(h_reg)) 
         
         
-        sig_reg =F.sigmoid(h_reg)
         
        
         h_class =F.relu(self.class_conv5_1(h)) 
         h_class =F.relu(self.class_conv5_2(h_class)) 
         
-    
+        scale_shift_reg = h_reg
         
-        return h_class, sig_reg
+        return h_class, scale_shift_reg

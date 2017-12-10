@@ -2,6 +2,7 @@ import numpy as np
 from network import VGGNet
 import chainer
 import chainer.functions as F
+from chainer import cuda
 
 def encode_y(x_down, labels_down):
     """
@@ -47,7 +48,7 @@ def match_boxes(x, y, boxes):
         cy = (box[1] + box[3])/2
         
         box_dist = (cx - x)**2 + (cy - y)**2
-        
+        scaled_dist = box_dist/12.25
         if box_dist < dist:
             offset = np.array([box[0] - x, box[1] - y, box[2] - x, box[3] - y])
             dist = box_dist
@@ -74,7 +75,7 @@ def downsample(x, labels):
     
     return x_down.data, labels_down
 
-def loss(pred_class, pred_loc, gt_class, gt_loc, lambd=0.4):
+def loss(pred_class, pred_loc, gt_class, gt_loc, lambd=1):
     """
     Calculates weighted sum of classification and regression loss. Calls the classification loss and regression loss functions separately.
     
@@ -88,7 +89,7 @@ def loss(pred_class, pred_loc, gt_class, gt_loc, lambd=0.4):
     Returns:
         loss: Scalar value of 
     """
-    return classification_loss(pred_class, gt_class) + lambd * regression_loss(pred_loc, gt_loc, gt_class)
+    return classification_loss(pred_class, gt_class) #+ lambd * regression_loss(pred_loc, gt_loc, gt_class)
 
 def classification_loss(pred_class, gt_class, debug=False):
     """
@@ -97,20 +98,20 @@ def classification_loss(pred_class, gt_class, debug=False):
     Also does hard negative mining. so requires generation of a selction mask of positives and most overconfident negatives.
     
     Args:
-        pred_class (b, 1, 60, 60): Network confidence probs
-        gt_class (b, 1, 60, 60): Binary gt confidence probs
+        pred_class (b, 1, 60, 60): Network confidence probs (on gpu)
+        gt_class (b, 1, 60, 60): Binary gt confidence probs (on gpu)
         
     Returns:
-        class_loss: Scalar
+        class_loss: Scalar (on gpu)
     """
     abs_loss = (pred_class - gt_class) ** 2
-    mask = selection_mask(abs_loss.data, gt_class.data)
-    selected_loss = abs_loss * mask
+    mask = selection_mask(cuda.to_cpu(abs_loss.data), cuda.to_cpu(gt_class.data))
+    selected_loss = abs_loss * cuda.to_gpu(mask)
     
     if debug:
         return selected_loss/pred_class.shape[0]
     else:
-        return F.sum(selected_loss)/pred_class.shape[0]
+        return F.mean(selected_loss)/pred_class.shape[0]
 
 def regression_loss(pred_loc, gt_loc, gt_class, debug=False):
     """
@@ -124,14 +125,14 @@ def regression_loss(pred_loc, gt_loc, gt_class, debug=False):
     Returns:
         reg_loss: Scalar
     """
-    abs_loss = F.sum(((pred_loc - gt_loc) ** 2),axis=1) # Check dims in test
+    abs_loss = F.mean(((pred_loc - gt_loc) ** 2),axis=1) # Check dims in test
     abs_loss = F.reshape(abs_loss,(abs_loss.shape[0],1,abs_loss.shape[1], abs_loss.shape[2]))
     selected_loss = abs_loss * gt_class
     
     if debug:
         return selected_loss/pred_loc.shape[0]
     else:
-        return F.sum(selected_loss)/pred_loc.shape[0]
+        return F.mean(selected_loss)/pred_loc.shape[0]
 
 def selection_mask(abs_loss, gt_class):
     """ Is there a simpler way of doing this?
