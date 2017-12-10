@@ -110,7 +110,7 @@ def classification_loss(pred_class, gt_class, debug=False):
     if debug:
         return selected_loss/pred_class.shape[0]
     else:
-        return selected_loss.sum()/pred_class.shape[0]
+        return F.sum(selected_loss)/pred_class.shape[0]
 
 def regression_loss(pred_loc, gt_loc, gt_class, debug=False):
     """
@@ -124,13 +124,14 @@ def regression_loss(pred_loc, gt_loc, gt_class, debug=False):
     Returns:
         reg_loss: Scalar
     """
-    abs_loss = ((pred_loc - gt_loc) ** 2).sum(axis=1) # Check dims in test
+    abs_loss = F.sum(((pred_loc - gt_loc) ** 2),axis=1) # Check dims in test
+    abs_loss = F.reshape(abs_loss,(abs_loss.shape[0],1,abs_loss.shape[1], abs_loss.shape[2]))
     selected_loss = abs_loss * gt_class
     
     if debug:
         return selected_loss/pred_loc.shape[0]
     else:
-        return selected_loss.sum()/pred_loc.shape[0]
+        return F.sum(selected_loss)/pred_loc.shape[0]
 
 def selection_mask(abs_loss, gt_class):
     """ Is there a simpler way of doing this?
