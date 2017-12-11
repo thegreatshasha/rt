@@ -84,4 +84,4 @@ class VGGNet(chainer.Chain):
         h_class =F.relu(self.class_conv5_1(h)) 
         h_class = F.relu(self.class_conv5_2(h_class))
         
-        return h_class, 2*h_reg-1
+        return h_class, h_reg
