@@ -47,10 +47,10 @@ def match_boxes(x, y, boxes):
         cx = (box[0] + box[2])/2
         cy = (box[1] + box[3])/2
         
-        box_dist = (cx - x)**2 + (cy - y)**2
-        scaled_dist = box_dist/12.25
+        box_dist = np.sqrt((cx - x)**2 + (cy - y)**2)
+        
         if box_dist < dist:
-            offset = np.array([box[0] - x, box[1] - y, box[2] - x, box[3] - y])
+            offset = np.array([box[0] - x, box[1] - y, box[2] - x, box[3] - y])/12.25 # offset is still distance
             dist = box_dist
             
     # Should not glitch because matching is only done for positive indices
@@ -89,7 +89,7 @@ def loss(pred_class, pred_loc, gt_class, gt_loc, lambd=1):
     Returns:
         loss: Scalar value of 
     """
-    return classification_loss(pred_class, gt_class) #+ lambd * regression_loss(pred_loc, gt_loc, gt_class)
+    return classification_loss(pred_class, gt_class) + lambd * regression_loss(pred_loc, gt_loc, gt_class)
 
 def classification_loss(pred_class, gt_class, debug=False):
     """
@@ -113,7 +113,7 @@ def classification_loss(pred_class, gt_class, debug=False):
     else:
         return F.mean(selected_loss)/pred_class.shape[0]
 
-def regression_loss(pred_loc, gt_loc, gt_class, debug=False):
+def regression_loss(pred_loc, gt_loc, gt_class, debug=False): #PROBLEMATIC
     """
     Regression loss from vanilla mean squared diff between shifts.
     
@@ -134,7 +134,7 @@ def regression_loss(pred_loc, gt_loc, gt_class, debug=False):
     else:
         return F.mean(selected_loss)/pred_loc.shape[0]
 
-def selection_mask(abs_loss, gt_class):
+def selection_mask(abs_loss, gt_class): #SAFE
     """ Is there a simpler way of doing this?
     Returns a binary mask from absolute mean square classification loss and the ground truth mask
     
@@ -159,7 +159,7 @@ def selection_mask(abs_loss, gt_class):
         matrix_indices = np.unravel_index(indices,(abs_loss.shape[2], abs_loss.shape[3]))
         matrix_indices_flipped = np.fliplr(matrix_indices)
 
-        num_positives = int(np.sum(gt_class[num,:,:]))
+        num_positives = int(np.sum(gt_class[num,0,:,:]))
         
         # Taking the top num_positives indices only
         matrix_indices_sorted = matrix_indices_flipped[:,0:num_positives]

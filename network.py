@@ -18,6 +18,7 @@ class VGGNet(chainer.Chain):
 
     def __init__(self):
         super(VGGNet, self).__init__(
+            # VGG base network
             conv1_1=L.Convolution2D(3, 64, 3, stride=1, pad=1),
             conv1_2=L.Convolution2D(64, 64, 3, stride=1, pad=1),
 
@@ -34,9 +35,11 @@ class VGGNet(chainer.Chain):
             conv4_3=L.Convolution2D(512, 512, 3, stride=1, pad=1),
             conv4_4=L.Convolution2D(512, 512, 3, stride=1, pad=1),
             
+            # Localization relu convolutions (denseboxes)
             reg_conv5_1=L.Convolution2D(768, 512, 1, stride=1, pad=0),
             reg_conv5_2=L.Convolution2D(512, 4, 1, stride=1, pad=0),
             
+            # Classification relu convolutions denseboxes
             class_conv5_1=L.Convolution2D(768, 512, 1, stride=1, pad=0),
             class_conv5_2=L.Convolution2D(512, 1,1, stride=1, pad=0),
             
@@ -46,24 +49,24 @@ class VGGNet(chainer.Chain):
         self.train = False
 
     def __call__(self, x):
+        # Conv 1 block VGG
         h = F.relu(self.conv1_1(x))
         h = F.relu(self.conv1_2(h))
         h_pool0 = F.max_pooling_2d(h, 2, stride=2)
-#         print(h_pool0.shape)
         
+        # Conv2 block VGG
         h = F.relu(self.conv2_1(h_pool0))
         h = F.relu(self.conv2_2(h))
-        h = F.relu(self.conv3_1(h))
         h_pool1 = F.max_pooling_2d(h, 2, stride=2)
-#         print(h_pool1.shape) 
 
-        #h = F.relu(self.conv3_1(h_pool1))
-        h = F.relu(self.conv3_2(h_pool1))
+        # Conv 3 block VGG
+        h = F.relu(self.conv3_1(h_pool1))
+        h = F.relu(self.conv3_2(h))
         h = F.relu(self.conv3_3(h))
         h_concat = F.relu(self.conv3_4(h))
         h_pool2 = F.max_pooling_2d(h_concat,2,stride= 2)
-#         print(h_pool2.shape) 
         
+        # Conv 4 block VGG
         h = F.relu(self.conv4_1(h_pool2))
         h = F.relu(self.conv4_2(h))
         h = F.relu(self.conv4_3(h))
@@ -73,16 +76,12 @@ class VGGNet(chainer.Chain):
        
         h = F.concat((h, h_concat), axis=1)
        
-        
+        # Localization
         h_reg =F.relu(self.reg_conv5_1(h)) 
-        h_reg =F.relu(self.reg_conv5_2(h_reg)) 
+        h_reg = F.relu(self.reg_conv5_2(h_reg)) 
         
-        
-        
-       
+        # Classification
         h_class =F.relu(self.class_conv5_1(h)) 
-        h_class =F.relu(self.class_conv5_2(h_class)) 
+        h_class = F.relu(self.class_conv5_2(h_class))
         
-        scale_shift_reg = h_reg
-        
-        return h_class, scale_shift_reg
+        return h_class, 2*h_reg-1
