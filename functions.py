@@ -27,8 +27,8 @@ def encode_y(x_down, labels_down):
         y_loc[b, :, y, x] = match_boxes(x, y, labels_down[b])
         
     y_class = y_class.reshape(x_down.shape[0], 1, x_down.shape[2], x_down.shape[3])
-    y_loc[:,0,:,:] = y_loc[:,0,:,:]*-1.0
-    y_loc[:,1,:,:] = y_loc[:,1,:,:]*-1.0
+   # y_loc[:,0,:,:] = y_loc[:,0,:,:]*-1.0
+    #y_loc[:,1,:,:] = y_loc[:,1,:,:]*-1.0
     
     return chainer.Variable(y_class), chainer.Variable(y_loc)
 
@@ -52,7 +52,7 @@ def match_boxes(x, y, boxes):
         box_dist = np.sqrt((cx - x)**2 + (cy - y)**2)
         
         if box_dist < dist:
-            offset = np.array([box[0] - x, box[1] - y, box[2] - x, box[3] - y])/12.25 # offset is still distance
+            offset = np.abs(np.array([box[0] - x, box[1] - y, box[2] - x, box[3] - y])/12.25) # offset is still distance
             dist = box_dist
             
     # Should not glitch because matching is only done for positive indices
