@@ -4,7 +4,7 @@ import chainer
 import chainer.functions as F
 from chainer import cuda
 
-def encode_y(x_down, labels_down):
+def encode_y(x_down,norm_factor, labels_down):
     """
     x_downsampled tensor -> y_tensor: Numpy
     
@@ -16,7 +16,7 @@ def encode_y(x_down, labels_down):
         y_class (b, 1, 60, 60): Chainer variable containing mask for each image. Calculated within encode
         y_loc (b, 4, 60, 60): Chainer variable containing offsets
     """
-    
+     
     y_class = np.zeros((x_down.shape[0], x_down.shape[2], x_down.shape[3]), dtype=np.float32)
     y_loc = np.zeros((x_down.shape[0], 4, x_down.shape[2], x_down.shape[3]), dtype=np.float32)
     
@@ -24,7 +24,7 @@ def encode_y(x_down, labels_down):
     pos_inds = np.argwhere(y_class) # y_class is also the positive examples mask
     
     for b, y, x in pos_inds:
-        y_loc[b, :, y, x] = match_boxes(x, y, labels_down[b])
+        y_loc[b, :, y, x] = match_boxes(x, y,norm_factor, labels_down[b])
         
     y_class = y_class.reshape(x_down.shape[0], 1, x_down.shape[2], x_down.shape[3])
    # y_loc[:,0,:,:] = y_loc[:,0,:,:]*-1.0
@@ -32,7 +32,7 @@ def encode_y(x_down, labels_down):
     
     return chainer.Variable(y_class), chainer.Variable(y_loc)
 
-def match_boxes(x, y, boxes):
+def match_boxes(x, y,norm_factor, boxes):
     """ Numpy
     Matches a point (x,y) to a bunch of boxes. Returns offset of the box with the nearest centre.
     
@@ -55,7 +55,7 @@ def match_boxes(x, y, boxes):
             offset = np.abs(np.array([(box[0] - x),
                                       (box[1] - y),
                                       (box[2] - x),
-                                      (box[3] - y)]))/20 # offset is still distance
+                                      (box[3] - y)]))/norm_factor # offset is still distance
             dist = box_dist
             
     # Should not glitch because matching is only done for positive indices
