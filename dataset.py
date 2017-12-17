@@ -124,6 +124,11 @@ class RotatedSquaresDataset:
 
     def  get_rotated_pts(self,center, dims, angle ):
         """ What does this do? """
+        # Bug here. This is messed up.
+        # Which goes in which channel
+        # He puts in array then rotates
+        # Messy way for encoding. These results cannot be trusted.
+        # Repeat encoding (deep matching prior)
         centerx, centery= center
         width, height = dims                 
         points =np.array([[centerx-(width/2),centery-(height/2)],
@@ -182,7 +187,7 @@ class RotatedSquaresDataset:
             plt.scatter(rot_pt_array[rot_pt_array[:,0].argmax(),0], rot_pt_array[rot_pt_array[:,0].argmax(),1],c=['green'])
             plt.show()
 
-    def generate_rot_image(self,center, dimensions, angle, plot_image=False): 
+    def generate_rot_image(self,center, dimensions, angle,img_size, plot_image=False ): 
         """
          What does this do, pawan?
          Input- 
@@ -194,7 +199,6 @@ class RotatedSquaresDataset:
 
         """
 
-        img_size= 240
 
         all_rotated_points,rot_pt_array = self.get_rotated_pts(center,dimensions, angle )
         img_numpy  =  self.draw_rot_object(img_size, all_rotated_points)
@@ -224,7 +228,7 @@ class RotatedSquaresDataset:
         number_boxes= 1
         rot_gt_box =np.zeros((number_images,number_boxes,4))
         rot_gt_imgs =np.zeros((number_images,3,image_size,image_size))
-        center_range =[20,220]
+        center_range =[120,160]
 
         for simg in range(number_images): 
 
@@ -237,7 +241,7 @@ class RotatedSquaresDataset:
                 center= [np.random.randint(center_range[0],center_range[1]),
                          np.random.randint(center_range[0],center_range[1])] 
                 
-                s_rot_gt_loc,s_rot_img= self.generate_rot_image(center,dimensions,angle,plot_image=True )
+                s_rot_gt_loc,s_rot_img= self.generate_rot_image(center,dimensions,angle,image_size, plot_image=True  )
                 rot_gt_box[simg,sbox,:]= s_rot_gt_loc
                 final_image += s_rot_img
 
