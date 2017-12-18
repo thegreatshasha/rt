@@ -303,10 +303,11 @@ class RotatedDataset:
             boxes = []
             
             for i in xrange(num_boxes):
-                verts = np.array([[200,200], [400,400], [400,200], [200,400]])/2.0 # Fix coordinates for now
+                verts = np.array([[100,100], [250,100], [100,200], [250,200]])/2 # Fix coordinates for now
                 centroid = verts.mean(axis=0)
-                angle = 0
-                #angle = 6.28*np.random.random()
+                #angle = 3.14/4
+                #angle = np.random.choice([0, 3.14/4.0])
+                angle = 3.14*np.random.random()
                 
                 verts = order_pts(np.array([rotate_point(centroid, v, angle) for v in verts]))
                 #box = np.array([tx,ty,tx+w,ty+h])

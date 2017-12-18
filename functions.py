@@ -56,7 +56,7 @@ def match_boxes(x, y, boxes):
                                       (box[2] - x),(box[3] - y),
                                       (box[4] - x),(box[5] - y),
                                       (box[6] - x),(box[7] - y),
-                                     ])/50 # offset is still distance
+                                     ])/12.25 # offset is still distance
             dist = box_dist
             
     # Should not glitch because matching is only done for positive indices
