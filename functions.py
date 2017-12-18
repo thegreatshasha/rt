@@ -18,9 +18,9 @@ def encode_y(x_down, labels_down):
     """
     
     y_class = np.zeros((x_down.shape[0], x_down.shape[2], x_down.shape[3]), dtype=np.float32)
-    y_loc = np.zeros((x_down.shape[0], 4, x_down.shape[2], x_down.shape[3]), dtype=np.float32)
+    y_loc = np.zeros((x_down.shape[0], 8, x_down.shape[2], x_down.shape[3]), dtype=np.float32)
     
-    y_class[x_down[:,0,:,:]>0] = 1 # Can also choose a smaller neighbourhood here
+    y_class[x_down[:,2,:,:]>0] = 1 # Can also choose a smaller neighbourhood here
     pos_inds = np.argwhere(y_class) # y_class is also the positive examples mask
     
     for b, y, x in pos_inds:
@@ -52,10 +52,11 @@ def match_boxes(x, y, boxes):
         box_dist = np.sqrt((cx - x)**2 + (cy - y)**2)
         
         if box_dist < dist:
-            offset = np.abs(np.array([(box[0] - x),
-                                      (box[1] - y),
-                                      (box[2] - x),
-                                      (box[3] - y)]))/20 # offset is still distance
+            offset = np.array([(box[0] - x),(box[1] - y),
+                                      (box[2] - x),(box[3] - y),
+                                      (box[4] - x),(box[5] - y),
+                                      (box[6] - x),(box[7] - y),
+                                     ])/50 # offset is still distance
             dist = box_dist
             
     # Should not glitch because matching is only done for positive indices
@@ -173,3 +174,86 @@ def selection_mask(abs_loss, gt_class): #SAFE
         select_mask[num,0,:,:] = select_mask[num,0,:,:] + gt_class[num,0,:,:] # Setting all positive indices to one
         
     return select_mask
+
+""" Some utility functions here """
+
+# Let's try generating a rotated rectangle first. How do we do it?
+def rotate_point(origin, point, angle):
+        """
+        Rotate a point counterclockwise by a given angle around a given origin.
+
+        The angle should be given in radians.
+        """
+        ox, oy = origin
+        px, py = point
+
+        qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+        qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+
+        return qx, qy
+   
+import math
+import cv2
+from scipy.spatial import ConvexHull
+
+def draw_quad(img, quad):
+    cv2.line(img, tuple(quad[0]), tuple(quad[1]), color=(255,0,0))
+    cv2.line(img, tuple(quad[1]), tuple(quad[2]), color=(0,255,0))
+    cv2.line(img, tuple(quad[2]), tuple(quad[3]), color=(0,0,255))
+    cv2.line(img, tuple(quad[3]), tuple(quad[0]), color=(255,255,0))
+
+def slope(p1, p2):
+    """
+    Calculates slope of two 2x1 points
+    
+    Args:
+        p1 (2,1): x1, y1
+        p2 (2,1): x2, y2
+        
+    Returns:
+        slope (scalar): Slope of the line between the two points
+    """
+    if p2[0] == p1[0]:
+        return np.inf
+    else:
+        return float(p2[1]-p1[1])/float(p2[0]-p1[0])
+
+def order_pts(pts):
+    """
+    Takes a list of pts and finds a structured labelling to it
+    
+    Args:
+        pts (4,2): 4x2 list of unordered pts
+        
+    Returns:
+        pts_u (4,2): 4x2 list of ordered pts
+    """
+    pts_u = pts.copy()
+    hull = ConvexHull(pts)
+    pts_u = hull.points[hull.vertices]
+    
+    # This gives us diametrically opposite points
+    diag1 = pts_u[0::2]
+    diag2 = pts_u[1::2]
+    
+    diags = [diag1, diag2]
+    
+    diag_idsx = np.argmax([slope(*list(diag1)), slope(*list(diag2))])
+    
+    x_idsx = diags[diag_idsx][:,0].argmin()
+    
+    min_x_1 = diags[diag_idsx][x_idsx]
+    
+    while not np.array_equal(pts_u[0], min_x_1):
+        pts_u = np.roll(pts_u, 1, axis=0)
+    
+    return pts_u
+
+def random_quadilateral():
+    verts = []
+    
+    for i in xrange(4):
+        verts.append([np.random.randint(0,400),np.random.randint(0,400)])
+        
+    return np.array(verts)
+    #return np.array([[0,0], [100,100], [100,0], [0,100]]) + 100
