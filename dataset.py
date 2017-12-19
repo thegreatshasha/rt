@@ -1,7 +1,7 @@
 from chainer import dataset
 import numpy as np
 import matplotlib.pyplot as plt
-from functions import *
+
 
 class SquaresDataset:
     def __init__(self):
@@ -253,102 +253,3 @@ class RotatedSquaresDataset:
             rot_gt_imgs[simg,:,:,:]= final_image
 
         return rot_gt_imgs.astype(np.float32), rot_gt_box.astype(np.float32)
-    
-""" Simple rotating square dataset. Fixed position. Square rotates. """
-    
-    
-class RotatedDataset:
-    def __init__(self):
-        pass
-    
-    def load(self):
-        pass
-    
-    def encode_labels(self, labels):
-        """
-        Encodes a list of labels as y tensor
-        
-        Args:
-            labels: List of list of boxes
-            
-        Returns:
-            gt_loc (n,1): 
-        """
-        pass
-    
-    def draw_box_img(self, img, verts):
-        verts = verts.reshape((-1,1,2))
-        cv2.polylines(img,[verts],True,(0,255,255), thickness=50)
-    
-    def generate_batch(self, n=100, h=70, w=70, img_h=240, img_w=240):
-        """
-        Generates a tensor of images with n randomly places squares. Images are of size 240x240.
-        
-        Args:
-            n (int): Batch size
-            h (int): Height of each square
-            w (int): Height of each square
-        
-        Returns:
-            imgs (n, 3, 240, 240): RGB image tensor
-            labels (n, v(n), 4): Numpy array with variable no of boxes per image
-        """
-        # image tensor
-        imgs = np.zeros((n,320,320,3), dtype=np.uint8)
-        labels = []
-
-        for img in imgs:
-            num_boxes = 1 # np.random.randint(2,4)
-
-            boxes = []
-            
-            for i in xrange(num_boxes):
-                verts = np.array([[100,100], [250,100], [100,200], [250,200]])/2 # Fix coordinates for now
-                centroid = verts.mean(axis=0)
-                #angle = 3.14/4
-                #angle = np.random.choice([0, 3.14/4.0])
-                angle = 3.14*np.random.random()
-                
-                verts = order_pts(np.array([rotate_point(centroid, v, angle) for v in verts]))
-                #box = np.array([tx,ty,tx+w,ty+h])
-                
-                #img[:,box[1]:box[3],box[0]:box[2]] = 1
-                self.draw_box_img(img, verts.astype(np.uint64))
-                boxes.append(verts)
-            
-            labels.append(np.array(boxes))
-            
-        return imgs, np.array(labels)
-    
-        
-    
-    def visualize_batch(self, imgs, labels):
-        """ 
-        Takes a batch of images and labels and plots them
-        
-        Args:
-            imgs (n, 3, 240, 240): Tensor of images
-            labels: list of list of boxes/img, each box in (tx, ty, bx, by) format
-            
-        Returns:
-            Nothing, really
-        """
-        
-        for i, img in enumerate(imgs):
-            
-            plt.imshow(img)
-            plt.show()
-            
-            lb_0 = labels[i][0]
-            img_c = np.zeros(img.shape, dtype=np.uint8)
-            draw_quad(img_c, lb_0.astype(np.uint64))
-            plt.imshow(img_c)
-            
-            plt.show()
-    
-    def encode(self):
-        pass
-    
-    def get_example(self, i):
-        # Here we generate and encode the 
-        pass

@@ -52,7 +52,7 @@ def match_boxes(x, y,norm_factor, boxes):
         box_dist = np.sqrt((cx - x)**2 + (cy - y)**2)
         
         if box_dist < dist:
-            offset = np.abs(np.array([(box[0] - x),
+            offset = (np.array([(box[0] - x),
                                       (box[1] - y),
                                       (box[2] - x),
                                       (box[3] - y)]))/norm_factor # offset is still distance
