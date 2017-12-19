@@ -225,7 +225,7 @@ class RotatedSquaresDataset:
         """
 
         number_images= num
-        number_boxes= 2
+        number_boxes= 1
         rot_gt_box =np.zeros((number_images,number_boxes,4))
         rot_gt_imgs =np.zeros((number_images,3,image_size,image_size))
         center_range =[120,160]
