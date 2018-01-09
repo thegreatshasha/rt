@@ -210,7 +210,7 @@ class RotatedSquaresDataset:
 
         return rot_gt_box, gt_img
 
-    def generate_batch( self, num=10, h=50, w= 30, image_size= 240):
+    def generate_batch( self, num_images=10, h=50, w= 30, num_boxes=2, image_size= 240):
         """
         Genreates a batch of rotated images
         
@@ -224,19 +224,17 @@ class RotatedSquaresDataset:
             rot_gt_imgs (num, 3, image_size, image_size)
         """
 
-        number_images= num
-        number_boxes= 1
-        rot_gt_box =np.zeros((number_images,number_boxes,4))
-        rot_gt_imgs =np.zeros((number_images,3,image_size,image_size))
-        center_range =[120,160]
+        rot_gt_box =np.zeros((num_images,num_boxes,4))
+        rot_gt_imgs =np.zeros((num_images,3,image_size,image_size))
+        center_range =[50,300]
 
-        for simg in range(number_images): 
+        for simg in range(num_boxes): 
 
             dimensions =[h,w]
 
             final_image = np.zeros([1,3,image_size, image_size])
 
-            for sbox in range(number_boxes):
+            for sbox in range(num_boxes):
                 angle = (np.random.rand())*6.28
                 center= [np.random.randint(center_range[0],center_range[1]),
                          np.random.randint(center_range[0],center_range[1])] 
