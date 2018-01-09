@@ -210,25 +210,26 @@ class RotatedSquaresDataset:
 
         return rot_gt_box, gt_img
 
-    def generate_batch( self, num_images=10, h=50, w= 30, num_boxes=2, image_size= 240):
+    def generate_batch( self, num_imgs=10, h=50, w= 30, num_boxes=2, image_size= 240):
         """
         Genreates a batch of rotated images
         
         Args:
-            num (scalar): Batch size
+            num_imgs (scalar): Batch size
             h (scalar): Height of the rectangle
             w (scalar): Width of the rectangle
+            num_boxes (scalar): Number of boxes
             image_size (scalar): Size of the image square.
             
         Returns:
             rot_gt_imgs (num, 3, image_size, image_size)
         """
 
-        rot_gt_box =np.zeros((num_images,num_boxes,4))
-        rot_gt_imgs =np.zeros((num_images,3,image_size,image_size))
-        center_range =[50,300]
+        rot_gt_box =np.zeros((num_imgs,num_boxes,4))
+        rot_gt_imgs =np.zeros((num_imgs,3,image_size,image_size))
+        center_range =[50,240-50]
 
-        for simg in range(num_boxes): 
+        for simg in range(num_imgs): 
 
             dimensions =[h,w]
 
@@ -237,7 +238,8 @@ class RotatedSquaresDataset:
             for sbox in range(num_boxes):
                 angle = (np.random.rand())*6.28
                 center= [np.random.randint(center_range[0],center_range[1]),
-                         np.random.randint(center_range[0],center_range[1])] 
+                         np.random.randint(center_range[0],center_range[1])]
+                print(center)
                 
                 s_rot_gt_loc,s_rot_img= self.generate_rot_image(center,dimensions,angle,image_size, plot_image=True  )
                 rot_gt_box[simg,sbox,:]= s_rot_gt_loc
