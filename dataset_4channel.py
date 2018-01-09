@@ -239,7 +239,6 @@ class RotatedSquaresDataset:
                 angle = (np.random.rand())*6.28
                 center= [np.random.randint(center_range[0],center_range[1]),
                          np.random.randint(center_range[0],center_range[1])]
-                print(center)
                 
                 s_rot_gt_loc,s_rot_img= self.generate_rot_image(center,dimensions,angle,image_size, plot_image=True  )
                 rot_gt_box[simg,sbox,:]= s_rot_gt_loc
