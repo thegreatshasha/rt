@@ -300,7 +300,7 @@ class BeetleDataset:
                 labels.append(boxes)
                 n_count += 1
 
-        return np.array(images), np.array(labels)
+        return np.moveaxis(np.array(images), 3, 1).astype(np.float32), np.array(labels)
         
     def get_random_patch(self, raw_img, label_img, size=160):
         # Sample centre
@@ -314,7 +314,7 @@ class BeetleDataset:
         # Upsample both raw and label patch
         patch_resized_raw = rescale(patch_raw, 2)
         patch_resized_label = rescale(patch_label, 2)
-        patch_resized_bw = np.zeros((patch_resized_label.shape[0], patch_resized_label.shape[1]))
+        patch_resized_bw = np.zeros((patch_resized_label.shape[0], patch_resized_label.shape[1]), dtype=np.float32)
         
         # Extract the ellipse region separately
         indices = np.where(patch_resized_label==[0,0,255])
@@ -356,9 +356,9 @@ class BeetleDataset:
             p_right = box[box[:,0].argmax(),:]
 
             # Add if condition to check that area of box is fine
-            box_final = np.hstack([p_left, p_right])
+            box_final = np.hstack([p_left, p_right]).astype(np.float32)
             boxes.append(box_final)
             #cv2.drawContours(patch_resized, [box], -1, (255,0,0),2)
             #cv2.line(patch_resized,(box_final[0], box_final[1]),(box_final[2], box_final[3]),(255,0,0),3)
 
-        return np.array(boxes)
+        return np.array(boxes).astype(np.float32)
