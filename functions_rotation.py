@@ -4,14 +4,15 @@ import chainer
 import chainer.functions as F
 from chainer import cuda
 
-def encode_y(x_down,norm_factor, labels_down):
+def encode_y(x_down, norm_factor, labels_down, x_thresh):
     """
     x_downsampled tensor -> y_tensor: Numpy
     
     Args:
         x_down (b, 3, 60, 60): Downsampled list of images
         labels_down (b, v, 2): List of lists of lists (downsampled boxes)
-        dimensions(2,1)      : Contains the height and width of the object(height width of rectangle) 
+        dimensions(2,1)      : Contains the height and width of the object(height width of rectangle)
+        x_thresh (b, 1, 60, 60): Thresholded binary segmented images
     Returns:
         y_class (b, 1, 60, 60): Chainer variable containing mask for each image. Calculated within encode
         y_loc (b, 4, 60, 60): Chainer variable containing offsets
@@ -20,7 +21,7 @@ def encode_y(x_down,norm_factor, labels_down):
     y_class = np.zeros((x_down.shape[0], x_down.shape[2], x_down.shape[3]), dtype=np.float32)
     y_loc = np.zeros((x_down.shape[0], 4, x_down.shape[2], x_down.shape[3]), dtype=np.float32)
     
-    y_class[x_down[:,0,:,:]>0] = 1 # Can also choose a smaller neighbourhood here
+    y_class[x_thresh.data[:,0,:,:]>0] = 1 # Can also choose a smaller neighbourhood here
     pos_inds = np.argwhere(y_class) # y_class is also the positive examples mask
     
     for b, y, x in pos_inds:
@@ -62,7 +63,7 @@ def match_boxes(x, y,norm_factor, boxes):
     return offset
     
 
-def downsample(x, labels):
+def downsample(x, labels, x_thresh):
     """
     x -> x/4
     
@@ -73,12 +74,14 @@ def downsample(x, labels):
     Returns:
         x_down (b, 3, 60, 60): Batch of 3 channel 60x60 images
         labels_down (b, v, 4): List of list of downsampled boxes
+        x_thresh_down (b, 1, 60, 60): Thresholded image tensor
     """
     # Resize batch by two max pools
     x_down = F.max_pooling_2d(F.max_pooling_2d(x, 2, stride=2 ), 2, stride=2 ) # Is this correct? Should we use bilinear interpolation instead?
+    x_thresh_down = F.max_pooling_2d(F.max_pooling_2d(x_thresh, 2, stride=2 ), 2, stride=2 ) # Let's switch to bilinear
     labels_down = labels/4.0
     
-    return x_down.data, labels_down
+    return x_down.data, labels_down, x_thresh_down
 
 def loss(pred_class, pred_loc, gt_class, gt_loc, lambd=1):
     """

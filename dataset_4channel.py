@@ -274,14 +274,17 @@ class BeetleDataset:
         Extract a random patch
         DO this until batch generation is complete
         
+        Args:
             n (int): Batch size
         
         Returns:
-            imgs (n, 3, 320, 320): RGB image tensor
+            imgs (n, 3, 240, 240): RGB image tensor
             labels (n, v(n), 4): Numpy array with variable no of boxes per image
+            imgs_thresh (n, 1, 240, 240): Thresholded RGB image tensor
         """
         images = []
         labels = []
+        images_thresh = []
         
         n_count = 0
 
@@ -297,12 +300,13 @@ class BeetleDataset:
             # At least one label in the box
             if len(boxes):
                 images.append(patch)
+                images_thresh.append(patch_bw)
                 labels.append(boxes)
                 n_count += 1
 
-        return np.moveaxis(np.array(images), 3, 1).astype(np.float32), np.array(labels)
+        return np.moveaxis(np.array(images), 3, 1).astype(np.float32), np.array(labels), np.array(images_thresh)
         
-    def get_random_patch(self, raw_img, label_img, size=160):
+    def get_random_patch(self, raw_img, label_img, size=120):
         # Sample centre
         cx = np.random.randint(0+size/2, raw_img.shape[1]-size/2)
         cy = np.random.randint(0+size/2, raw_img.shape[0]-size/2)
@@ -320,7 +324,7 @@ class BeetleDataset:
         indices = np.where(patch_resized_label==[0,0,255])
         patch_resized_bw[indices[0],indices[1]]=1
 
-        return patch_resized_raw, patch_resized_bw
+        return patch_resized_raw, np.expand_dims(patch_resized_bw, axis=0)
     
     def visualize_batch(self, x, y):
         # Allows one to visualize a batch for visual verification
@@ -338,8 +342,10 @@ class BeetleDataset:
 
             plt.show()
     
-    def generate_boxes(self, patch):
+    def generate_boxes(self, patch_bw):
         # Find all contours
+        patch = patch_bw[0
+]
         contours, hierarchy = cv2.findContours(patch.astype(np.uint8),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 
         boxes = []
