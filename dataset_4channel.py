@@ -258,6 +258,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from scipy.misc import imread
+from skimage.measure import label, regionprops
+from skimage.draw import line
+
 
 class BeetleDataset:
     
@@ -306,7 +309,8 @@ class BeetleDataset:
 
         return np.moveaxis(np.array(images), 3, 1).astype(np.float32), np.array(labels), np.array(images_thresh)
         
-    def get_random_patch(self, raw_img, label_img, size=120):
+    def get_random_patch(self, raw_img, label_img, size=160):
+        # Buggy right now, why are some of the patches larger and some smaller?
         # Sample centre
         cx = np.random.randint(0+size/2, raw_img.shape[1]-size/2)
         cy = np.random.randint(0+size/2, raw_img.shape[0]-size/2)
@@ -327,44 +331,64 @@ class BeetleDataset:
         return patch_resized_raw, np.expand_dims(patch_resized_bw, axis=0)
     
     def visualize_batch(self, x, y):
+        # Buggy right now. Modify this to work before running network
         # Allows one to visualize a batch for visual verification
         # Run training first, then run visual verification for initiation
+        plt.figure(figsize=(8,8))
+        plt.imshow(x[0])
+        plt.show()
         
         for x_img, y_boxes in zip(x, y):
-            fig = plt.figure(figsize=(10,10))
-            # Show the img
+            # Reduce the intensity of the image
+            x_img = x_img/2.0 
             
             for y_box in y_boxes:
-                cv2.line(x_img,(y_box[0], y_box[1]),(y_box[2], y_box[3]),(255,0,0),3)
+                fig = plt.figure(figsize=(8,8))
+                print(y_box[4])
+                rr,cc = line(y_box[1], y_box[0], y_box[3], y_box[2])
+                #rr2,cc2 = line(r1,c1,r3,c3)
+                
+                x_img[rr,cc] = 1
             
-            plt.imshow(x_img)
+                plt.imshow(x_img)
+                plt.show()
             fig.text(0.5, 0.05, str(x_img.shape), ha='center')
 
             plt.show()
     
     def generate_boxes(self, patch_bw):
         # Find all contours
-        patch = patch_bw[0
-]
-        contours, hierarchy = cv2.findContours(patch.astype(np.uint8),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+        patch = patch_bw[0]
+        
+        regions = regionprops(label(patch))
 
         boxes = []
 
-        for cnt in contours:
-            # Find rotated box
-            rect = cv2.minAreaRect(cnt)
+        for r in regions:
+            # TODO: Threshold region by dimensions, we don't want too many incomplete regions
+            
+            # Center of the ellipse
+            r1 = int(r.centroid[0])
+            c1 = int(r.centroid[1])
+            
+            # Angle offset. No idea why we do this?
+            angle_extracted = r.orientation
+            
+            # End point1
+            r2  = int(r1 + r.major_axis_length/2*np.cos(angle_extracted))
+            c2 = int(c1 + r.major_axis_length/2*np.sin(angle_extracted))
+            
+            # End point2
+            r3  = int(r1 - r.major_axis_length/2*np.cos(angle_extracted))
+            c3 = int(c1 - r.major_axis_length/2*np.sin(angle_extracted))
+            
+            # Point with smaller r is first, larger r is second
+            if r2<r3:
+                box = [c2,r2,c3,r3,r.major_axis_length]
+            else:
+                box = [c3,r3,c2,r2,r.major_axis_length]
+            # TODO: Add edge case for equality otherwise this will create issues
+            
+            boxes.append(np.array(box, dtype=np.uint8))
 
-            box = cv2.cv.BoxPoints(rect)
-            box = np.int0(box)
-
-            # Find left most and right most point
-            p_left = box[box[:,0].argmin(),:]
-            p_right = box[box[:,0].argmax(),:]
-
-            # Add if condition to check that area of box is fine
-            box_final = np.hstack([p_left, p_right]).astype(np.float32)
-            boxes.append(box_final)
-            #cv2.drawContours(patch_resized, [box], -1, (255,0,0),2)
-            #cv2.line(patch_resized,(box_final[0], box_final[1]),(box_final[2], box_final[3]),(255,0,0),3)
-
-        return np.array(boxes).astype(np.float32)
+        return np.array(boxes).astype(np.uint8)
